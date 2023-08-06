@@ -29,9 +29,9 @@ type HelloWorldSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of HelloWorld. Edit helloworld_types.go to remove/update
-	image           string `json:"image,omitempty"`
-	replica         string `json:"replica,omitempty"`
-	ingressHostname string `json:"ingressHostname,omitempty"`
+	Image           string `json:"image,omitempty"`
+	Replicas        int32  `json:"replicas,omitempty"`
+	IngressHostname string `json:"ingressHostname,omitempty"`
 }
 
 // HelloWorldStatus defines the observed state of HelloWorld
