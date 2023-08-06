@@ -72,7 +72,7 @@ func (r *HelloWorldReconciler) newDeployment(image string, replicas int32) *apps
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx-deployment",
-			Namespace: "default", // Change this to your desired namespace
+			Namespace: "default", 
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(replicas),
