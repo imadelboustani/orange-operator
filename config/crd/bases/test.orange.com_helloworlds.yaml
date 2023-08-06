@@ -41,8 +41,9 @@ spec:
                 type: string
               ingressHostname:
                 type: string
-              replica:
-                type: string
+              replicas:
+                format: int32
+                type: integer
             type: object
           status:
             description: HelloWorldStatus defines the observed state of HelloWorld

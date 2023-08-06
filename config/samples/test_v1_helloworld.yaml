@@ -9,4 +9,7 @@ metadata:
     app.kubernetes.io/created-by: orange-operator
   name: helloworld-sample
 spec:
+   image: nginx
+   replicas: 2
+   ingressHostname: hello.world.com
   # TODO(user): Add fields here

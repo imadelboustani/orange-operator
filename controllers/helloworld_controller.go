@@ -19,10 +19,13 @@ package controllers
 import (
 	"context"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	testv1 "github.com/imadelboustani/kubernetes-operator/api/v1"
 )
@@ -47,9 +50,12 @@ type HelloWorldReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	helloWorld := &testv1.HelloWorld{}
+	_ = r.Get(ctx, req.NamespacedName, helloWorld)
 
-	// TODO(user): your logic here
+	deployment := r.newDeployment(helloWorld.Spec.Image, helloWorld.Spec.Replicas)
+	_ = controllerutil.SetControllerReference(helloWorld, deployment, r.Scheme)
+	_ = r.Create(ctx, deployment)
 
 	return ctrl.Result{}, nil
 }
@@ -58,5 +64,40 @@ func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *HelloWorldReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&testv1.HelloWorld{}).
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
+
+func (r *HelloWorldReconciler) newDeployment(image string, replicas int32) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx-deployment",
+			Namespace: "default", // Change this to your desired namespace
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: int32Ptr(replicas),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "nginx",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "nginx",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func int32Ptr(i int32) *int32 { return &i }
