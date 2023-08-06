@@ -53,7 +53,7 @@ func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	helloWorld := &testv1.HelloWorld{}
 	_ = r.Get(ctx, req.NamespacedName, helloWorld)
 
-	deployment := r.newDeployment(helloWorld.Spec.Image, helloWorld.Spec.Replicas)
+	deployment := r.newDeployment(helloWorld.Spec.Image, helloWorld.Spec.Replicas, helloWorld.Namespace)
 	_ = controllerutil.SetControllerReference(helloWorld, deployment, r.Scheme)
 	_ = r.Create(ctx, deployment)
 
@@ -68,11 +68,11 @@ func (r *HelloWorldReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *HelloWorldReconciler) newDeployment(image string, replicas int32) *appsv1.Deployment {
+func (r *HelloWorldReconciler) newDeployment(image string, replicas int32, namespace string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx-deployment",
-			Namespace: "default", 
+			Namespace: namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(replicas),
