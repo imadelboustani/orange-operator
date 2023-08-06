@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -57,6 +58,10 @@ func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	_ = controllerutil.SetControllerReference(helloWorld, deployment, r.Scheme)
 	_ = r.Create(ctx, deployment)
 
+	service := r.newService(helloWorld.Namespace)
+	_ = controllerutil.SetControllerReference(helloWorld, service, r.Scheme)
+	_ = r.Create(ctx, service)
+
 	return ctrl.Result{}, nil
 }
 
@@ -65,6 +70,7 @@ func (r *HelloWorldReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&testv1.HelloWorld{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }
 
@@ -94,6 +100,26 @@ func (r *HelloWorldReconciler) newDeployment(image string, replicas int32, names
 							Image: image,
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func (r *HelloWorldReconciler) newService(namespace string) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx-service",
+			Namespace: namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app": "nginx",
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Port:       80,
+					TargetPort: intstr.FromInt(80),
 				},
 			},
 		},
