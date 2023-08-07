@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	testv1 "github.com/imadelboustani/kubernetes-operator/api/v1"
 )
@@ -58,26 +57,23 @@ func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	log := log.FromContext(ctx)
 	_ = r.Get(ctx, req.NamespacedName, helloWorld)
 
+	log.Info("Start Deployment creation ")
 	deployment := r.newDeployment(helloWorld.Spec.Image, helloWorld.Spec.Replicas, helloWorld.Namespace)
 	_ = controllerutil.SetControllerReference(helloWorld, deployment, r.Scheme)
 	_ = r.Create(ctx, deployment)
+	log.Info("Deployment creation terminate with success ")
 
+	log.Info("Start Service Deployment")
 	service := r.newService(helloWorld.Namespace)
 	_ = controllerutil.SetControllerReference(helloWorld, service, r.Scheme)
 	_ = r.Create(ctx, service)
+	log.Info("Service Deployment terminate with success")
 
+	log.Info("Start Ingress Deployment")
 	ingress := r.newIngress(helloWorld.Namespace, helloWorld.Spec.IngressHostname)
 	_ = controllerutil.SetControllerReference(helloWorld, ingress, r.Scheme)
 	_ = r.Create(ctx, ingress)
-
-	if err := controllerutil.SetControllerReference(helloWorld, ingress, r.Scheme); err != nil {
-		log.Error(err, "Failed to set owner reference for Ingress")
-		return reconcile.Result{}, err
-	}
-	if err := r.Create(ctx, ingress); err != nil {
-		log.Error(err, "Failed to create Ingress")
-		return reconcile.Result{}, err
-	}
+	log.Info("Ingress Deployment terminate with success")
 
 	log.Info("Reconciliation completed successfully.")
 	return ctrl.Result{}, nil
@@ -146,19 +142,16 @@ func (r *HelloWorldReconciler) newService(namespace string) *corev1.Service {
 }
 
 func (r *HelloWorldReconciler) newIngress(namespace, ingressHostname string) *networkingv1.Ingress {
-	ingressClassName := "nginx" 
 
-	pathType := networkingv1.PathTypePrefix 
+	pathType := networkingv1.PathTypePrefix
 
 	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "nginx-ingress",
 			Namespace:   namespace,
-			Annotations: map[string]string{
-			},
+			Annotations: map[string]string{},
 		},
 		Spec: networkingv1.IngressSpec{
-			IngressClassName: &ingressClassName, 
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: ingressHostname,
@@ -166,8 +159,8 @@ func (r *HelloWorldReconciler) newIngress(namespace, ingressHostname string) *ne
 						HTTP: &networkingv1.HTTPIngressRuleValue{
 							Paths: []networkingv1.HTTPIngressPath{
 								{
-									Path:     "/",  
-									PathType: &pathType, 
+									Path:     "/",
+									PathType: &pathType,
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
 											Name: "nginx-service",
