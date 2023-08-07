@@ -69,7 +69,7 @@ func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	_ = r.Create(ctx, service)
 	log.Info("Service Deployment terminate with success")
 
-	log.Info("Start Service Deployment")
+	log.Info("Start Ingress Deployment")
 	ingress := r.newIngress(helloWorld.Namespace, helloWorld.Spec.IngressHostname)
 	_ = controllerutil.SetControllerReference(helloWorld, ingress, r.Scheme)
 	_ = r.Create(ctx, ingress)
