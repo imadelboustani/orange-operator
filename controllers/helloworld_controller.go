@@ -142,7 +142,6 @@ func (r *HelloWorldReconciler) newService(namespace string) *corev1.Service {
 }
 
 func (r *HelloWorldReconciler) newIngress(namespace, ingressHostname string) *networkingv1.Ingress {
-	ingressClassName := "nginx"
 
 	pathType := networkingv1.PathTypePrefix
 
@@ -153,7 +152,6 @@ func (r *HelloWorldReconciler) newIngress(namespace, ingressHostname string) *ne
 			Annotations: map[string]string{},
 		},
 		Spec: networkingv1.IngressSpec{
-			IngressClassName: &ingressClassName,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: ingressHostname,
