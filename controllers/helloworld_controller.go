@@ -21,12 +21,15 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	testv1 "github.com/imadelboustani/kubernetes-operator/api/v1"
 )
@@ -52,6 +55,7 @@ type HelloWorldReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	helloWorld := &testv1.HelloWorld{}
+	log := log.FromContext(ctx)
 	_ = r.Get(ctx, req.NamespacedName, helloWorld)
 
 	deployment := r.newDeployment(helloWorld.Spec.Image, helloWorld.Spec.Replicas, helloWorld.Namespace)
@@ -62,6 +66,20 @@ func (r *HelloWorldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	_ = controllerutil.SetControllerReference(helloWorld, service, r.Scheme)
 	_ = r.Create(ctx, service)
 
+	ingress := r.newIngress(helloWorld.Namespace, helloWorld.Spec.IngressHostname)
+	_ = controllerutil.SetControllerReference(helloWorld, ingress, r.Scheme)
+	_ = r.Create(ctx, ingress)
+
+	if err := controllerutil.SetControllerReference(helloWorld, ingress, r.Scheme); err != nil {
+		log.Error(err, "Failed to set owner reference for Ingress")
+		return reconcile.Result{}, err
+	}
+	if err := r.Create(ctx, ingress); err != nil {
+		log.Error(err, "Failed to create Ingress")
+		return reconcile.Result{}, err
+	}
+
+	log.Info("Reconciliation completed successfully.")
 	return ctrl.Result{}, nil
 }
 
@@ -71,6 +89,7 @@ func (r *HelloWorldReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&testv1.HelloWorld{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&networkingv1.Ingress{}).
 		Complete(r)
 }
 
@@ -120,6 +139,47 @@ func (r *HelloWorldReconciler) newService(namespace string) *corev1.Service {
 				{
 					Port:       80,
 					TargetPort: intstr.FromInt(80),
+				},
+			},
+		},
+	}
+}
+
+func (r *HelloWorldReconciler) newIngress(namespace, ingressHostname string) *networkingv1.Ingress {
+	ingressClassName := "nginx" 
+
+	pathType := networkingv1.PathTypePrefix 
+
+	return &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "nginx-ingress",
+			Namespace:   namespace,
+			Annotations: map[string]string{
+			},
+		},
+		Spec: networkingv1.IngressSpec{
+			IngressClassName: &ingressClassName, 
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: ingressHostname,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path:     "/",  
+									PathType: &pathType, 
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: "nginx-service",
+											Port: networkingv1.ServiceBackendPort{
+												Number: 80,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
