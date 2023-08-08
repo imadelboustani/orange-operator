@@ -8,8 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: orange-operator
   name: helloworld-sample
-  namespace: orangev2
-
+  namespace: orange-operator-system
 spec:
    image: nginx
    replicas: 2
