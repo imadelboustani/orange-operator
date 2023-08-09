@@ -6,32 +6,6 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - test.orange.com
-  resources:
-  - helloworlds
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - test.orange.com
-  resources:
-  - helloworlds/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - test.orange.com
-  resources:
-  - helloworlds/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - apps
   resources:
   - deployments
@@ -67,3 +41,29 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - test.orange.com
+  resources:
+  - helloworlds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - test.orange.com
+  resources:
+  - helloworlds/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - test.orange.com
+  resources:
+  - helloworlds/status
+  verbs:
+  - get
+  - patch
+  - update
